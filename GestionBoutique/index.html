@@ -3,28 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gestion Boutique</title>
+  <title>ETS JEHOVAH D'ABORD</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <section id="loginScreen" class="login-screen">
     <form id="loginForm" class="login-card">
-      <span class="brand-mark">GB</span>
+      <img class="login-logo" src="logo.png" alt="ETS JEHOVAH D'ABORD">
+      <strong class="login-brand">ETS JEHOVAH D'ABORD</strong>
       <h1>Connexion</h1>
       <label>Utilisateur<input id="loginUser" autocomplete="username" required></label>
       <label>Mot de passe<input id="loginPassword" type="password" autocomplete="current-password" required></label>
       <button type="submit">Se connecter</button>
-      <p class="hint">Compte demo : admin / admin</p>
+      <button id="forgotPasswordLink" class="text-button" type="button">Forget password ?</button>
     </form>
   </section>
 
+  <div id="forgotPasswordModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordTitle">
+    <form id="forgotPasswordForm" class="modal-card">
+      <h2 id="forgotPasswordTitle">Mot de passe oublie</h2>
+      <label>ID de connexion<input id="forgotUsername" autocomplete="username" required></label>
+      <label>Mail de l'admin<input id="forgotAdminEmail" type="email" required></label>
+      <div class="actions">
+        <button id="sendForgotRequest" class="hidden" type="submit">Envoyer</button>
+        <button id="closeForgotPassword" class="ghost" type="button">Annuler</button>
+      </div>
+    </form>
+  </div>
+
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-mark">GB</span>
-      <div>
-        <strong>Gestion Boutique</strong>
-        <small>Magasin + caisse</small>
-      </div>
+      <img class="brand-logo" src="logo.png" alt="ETS JEHOVAH D'ABORD">
+      <strong>ETS JEHOVAH D'ABORD</strong>
     </div>
 
     <button class="nav active" data-view="dashboard">Tableau de bord</button>
@@ -213,6 +223,7 @@
         <h2>Ajouter un utilisateur</h2>
         <form id="userForm" class="grid-form">
           <label>Nom complet<input id="newUserName" required></label>
+          <label>Mail utilisateur<input id="newUserEmail" type="email" required></label>
           <label>Identifiant<input id="newUsername" readonly required></label>
           <label>Mot de passe<input id="newUserPassword" type="password" required></label>
           <label>Rôle
@@ -233,17 +244,17 @@
     </section>
 
     <section id="backup" class="view">
-      <div class="panel">
+      <div id="localBackupPanel" class="panel">
         <h2>Sauvegarde locale</h2>
         <div class="actions">
           <button id="downloadBackup" type="button">Télécharger sauvegarde</button>
-          <label class="file-button">
+          <label id="restoreBackupButton" class="file-button">
             Restaurer sauvegarde
             <input id="restoreBackup" type="file" accept="application/json">
           </label>
         </div>
       </div>
-      <div class="panel">
+      <div id="exportBackupPanel" class="panel">
         <h2>Exports pour Excel</h2>
         <div class="actions">
           <button id="exportProducts" type="button">Exporter produits CSV</button>

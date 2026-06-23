@@ -9,11 +9,13 @@ const DB_XLSX = path.join(DATA_DIR, "GestionBoutique_DB.xlsx");
 const DB_JSON = path.join(DATA_DIR, "GestionBoutique_DB.json");
 const PORT = Number(process.argv.find((arg) => /^\d+$/.test(arg)) || process.env.PORT || 3721);
 const HOST = process.env.HOST || "127.0.0.1";
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "1234@dmin100%";
 
 const defaultState = {
   session: null,
   users: [
-    { username: "admin", password: "admin", role: "Administrateur", name: "Administrateur" }
+    { username: ADMIN_USERNAME, password: ADMIN_PASSWORD, role: "Administrateur", name: "Administrateur" }
   ],
   products: [
     { code: "PUMP_075HP", name: "Pump interdab 0.75HP", sellPrice: 30000 },
@@ -162,7 +164,7 @@ function normalizeState(data) {
     users: users.map((user) => ({
       name: String(user.name || user.username || ""),
       username: String(user.username || ""),
-      password: String(user.password || ""),
+      password: String(user.username || "") === ADMIN_USERNAME ? ADMIN_PASSWORD : String(user.password || ""),
       role: normalizeRole(user.role)
     })).filter((user) => user.username),
     products: products.map((product) => ({

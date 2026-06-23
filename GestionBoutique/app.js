@@ -1,9 +1,11 @@
 const STORAGE_KEY = "gestion_boutique_v1";
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "1234@dmin100%";
 
 const demoData = {
   session: null,
   users: [
-    { username: "admin", password: "admin", role: "Administrateur", name: "Administrateur" }
+    { username: ADMIN_USERNAME, password: ADMIN_PASSWORD, role: "Administrateur", name: "Administrateur" }
   ],
   products: [
     { code: "PUMP_075HP", name: "Pump interdab 0.75HP", sellPrice: 30000 },
@@ -40,8 +42,16 @@ const views = {
 
 const roleAccess = {
   Administrateur: ["dashboard", "products", "warehouse", "transfer", "shop", "cashier", "sales", "users", "backup"],
-  Magasinier: ["dashboard", "products", "warehouse", "transfer", "shop"],
-  Caissier: ["dashboard", "shop", "cashier", "sales"]
+  Magasinier: ["dashboard", "products", "warehouse", "transfer", "backup"],
+  Caissier: ["dashboard", "shop", "cashier", "sales", "backup"]
+};
+
+const backupActionAccess = {
+  downloadBackup: ["Administrateur"],
+  restoreBackup: ["Administrateur"],
+  exportProducts: ["Administrateur", "Magasinier", "Caissier"],
+  exportStocks: ["Administrateur", "Magasinier", "Caissier"],
+  exportSales: ["Administrateur", "Caissier"]
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -95,6 +105,8 @@ function updateAuth() {
     button.style.display = allowed ? "" : "none";
   });
 
+  updateBackupActions();
+
   const activeView = document.querySelector(".view.active")?.id || "dashboard";
   if (!canAccessView(activeView)) showView(firstAllowedView());
 }
@@ -114,6 +126,7 @@ function normalizeState(data) {
   const users = Array.isArray(data.users) && data.users.length ? data.users : structuredClone(demoData.users);
   const normalizedUsers = users.map((user) => ({
     ...user,
+    password: user.username === ADMIN_USERNAME ? ADMIN_PASSWORD : user.password,
     role: normalizeRole(user.role)
   }));
   const normalizedSession = data.session ? {
@@ -154,6 +167,43 @@ function canAccessView(viewName) {
 
 function firstAllowedView() {
   return (roleAccess[state.session?.role] || ["dashboard"])[0];
+}
+
+function canUseBackupAction(actionName) {
+  if (!state.session) return false;
+  return (backupActionAccess[actionName] || []).includes(state.session.role);
+}
+
+function requireBackupAction(actionName) {
+  if (canUseBackupAction(actionName)) return true;
+
+  alert("Action non autorisée pour ce rôle.");
+  return false;
+}
+
+function updateBackupActions() {
+  const actions = {
+    downloadBackup: document.getElementById("downloadBackup"),
+    restoreBackup: document.getElementById("restoreBackupButton"),
+    exportProducts: document.getElementById("exportProducts"),
+    exportStocks: document.getElementById("exportStocks"),
+    exportSales: document.getElementById("exportSales")
+  };
+
+  Object.entries(actions).forEach(([actionName, element]) => {
+    if (element) element.classList.toggle("hidden", !canUseBackupAction(actionName));
+  });
+
+  const localPanel = document.getElementById("localBackupPanel");
+  const exportPanel = document.getElementById("exportBackupPanel");
+
+  if (localPanel) {
+    localPanel.classList.toggle("hidden", !canUseBackupAction("downloadBackup") && !canUseBackupAction("restoreBackup"));
+  }
+
+  if (exportPanel) {
+    exportPanel.classList.toggle("hidden", !canUseBackupAction("exportProducts") && !canUseBackupAction("exportStocks") && !canUseBackupAction("exportSales"));
+  }
 }
 
 function saveState() {
@@ -211,7 +261,7 @@ function getProduct(code) {
 }
 
 function bindNavigation() {
-  document.querySelectorAll(".nav").forEach((button) => {
+  document.querySelectorAll(".nav[data-view]").forEach((button) => {
     button.addEventListener("click", () => showView(button.dataset.view));
   });
 
@@ -765,10 +815,35 @@ function renderUsers() {
       <td>${escapeHtml(user.name)}</td>
       <td>${escapeHtml(user.username)}</td>
       <td>${escapeHtml(user.role)}</td>
+      <td>${canDeleteUsers(user.username) ? `<button type="button" class="button-danger" onclick="deleteUser('${escapeJs(user.username)}')">Supprimer</button>` : ""}</td>
     </tr>
   `).join("");
 
-  document.getElementById("usersTable").innerHTML = table(["Nom", "Identifiant", "Rôle"], rows);
+  document.getElementById("usersTable").innerHTML = table(["Nom", "Identifiant", "Rôle", "Actions"], rows);
+}
+
+function canDeleteUsers(username) {
+  return isAdmin() && username !== ADMIN_USERNAME;
+}
+
+function deleteUser(username) {
+  if (!isAdmin()) {
+    alert("Suppression réservée à l'administrateur.");
+    return;
+  }
+
+  if (username === ADMIN_USERNAME) {
+    alert("Le compte administrateur principal ne peut pas être supprimé.");
+    return;
+  }
+
+  const user = state.users.find((item) => item.username === username);
+  if (!user) return;
+
+  if (!confirm(`Supprimer l'utilisateur "${user.name}" ?`)) return;
+
+  state.users = state.users.filter((item) => item.username !== username);
+  commit();
 }
 
 function canDeleteProducts() {
@@ -1064,10 +1139,17 @@ function escapeJs(value) {
 }
 
 function downloadBackup() {
+  if (!requireBackupAction("downloadBackup")) return;
+
   downloadFile("sauvegarde-gestion-boutique.json", JSON.stringify(state, null, 2), "application/json");
 }
 
 function restoreBackup(event) {
+  if (!requireBackupAction("restoreBackup")) {
+    event.target.value = "";
+    return;
+  }
+
   const file = event.target.files[0];
   if (!file) return;
 
@@ -1080,7 +1162,7 @@ function restoreBackup(event) {
         return;
       }
 
-      state = data;
+      state = normalizeState(data);
       commit();
       alert("Sauvegarde restaurée.");
     } catch {
@@ -1093,6 +1175,8 @@ function restoreBackup(event) {
 }
 
 function exportProductsCsv() {
+  if (!requireBackupAction("exportProducts")) return;
+
   const rows = [["Code", "Nom", "Prix vente"]];
   state.products.forEach((product) => {
     rows.push([product.code, product.name, product.sellPrice]);
@@ -1101,6 +1185,8 @@ function exportProductsCsv() {
 }
 
 function exportStocksCsv() {
+  if (!requireBackupAction("exportStocks")) return;
+
   const rows = [["Code", "Produit", "Stock magasin", "Stock boutique"]];
   state.products.forEach((product) => {
     rows.push([product.code, product.name, state.warehouse[product.code] || 0, state.shop[product.code] || 0]);
@@ -1109,6 +1195,8 @@ function exportStocksCsv() {
 }
 
 function exportSalesCsv() {
+  if (!requireBackupAction("exportSales")) return;
+
   const rows = [["Date", "Ticket", "Paiement", "Numero MoMo", "Reference MoMo", "Code", "Produit", "Quantite", "Prix", "Montant", "Total ticket", "Paye", "Monnaie"]];
   state.sales.forEach((sale) => {
     sale.items.forEach((item) => {

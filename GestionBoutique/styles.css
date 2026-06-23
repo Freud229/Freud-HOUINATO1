@@ -61,8 +61,18 @@ body.locked .login-screen {
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
 }
 
-.login-card .brand-mark {
-  margin-bottom: 2px;
+.login-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  justify-self: center;
+}
+
+.login-brand {
+  text-align: center;
+  color: #17212b;
+  font-size: 18px;
+  letter-spacing: 0;
 }
 
 .login-card h1 {
@@ -147,15 +157,17 @@ label {
   margin-bottom: 16px;
 }
 
-.brand-mark {
+.brand-logo {
   width: 42px;
   height: 42px;
-  display: grid;
-  place-items: center;
+  flex: 0 0 auto;
   border-radius: 8px;
-  background: #f2c94c;
-  color: #17212b;
-  font-weight: 900;
+  background: white;
+  object-fit: contain;
+}
+
+.brand strong {
+  line-height: 1.2;
 }
 
 .brand small {

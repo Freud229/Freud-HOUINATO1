@@ -16,7 +16,7 @@ Ou l'ouvrir avec Chrome / Edge.
 
 ```text
 Utilisateur : admin
-Mot de passe : 1234admin100%
+Mot de passe : 1234@dmin100%
 ```
 
 ## Fonctionnalites disponibles
